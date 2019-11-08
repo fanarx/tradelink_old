@@ -1,6 +1,5 @@
 <template>
   <main>
-    <h1>App Vue</h1>
     <hello-world></hello-world>
   </main>
 </template>

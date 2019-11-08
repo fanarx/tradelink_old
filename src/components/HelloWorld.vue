@@ -1,11 +1,27 @@
 <template>
   <div class="hello">
-    <h1>Hello World</h1>
+    <h1>Hello Trading</h1>
+    <ul>
+      <li
+        v-for="stock in tradeBox.allStocks"
+        :key="stock.id"
+      >
+        {{stock.title}}
+        <ul>
+          <li
+            v-for="item in stock.stocks"
+            :key="item.id"
+          >
+            {{item.name}}
+          </li>
+        </ul>
+      </li>
+    </ul>
   </div>
 </template>
 
 <script>
-import { onMounted } from "@vue/composition-api";
+import { onMounted, reactive } from "@vue/composition-api";
 import gql from "graphql-tag";
 import { useApollo } from "../composables/useApollo";
 
@@ -13,6 +29,13 @@ export default {
   name: "HelloWorld",
   setup() {
     const apollo = useApollo();
+
+    const tradeBox = reactive({
+      allStocks: {
+        title: "",
+        stocks: []
+      }
+    });
 
     onMounted(() => {
       const GET_BOXES = gql`
@@ -29,10 +52,12 @@ export default {
         .query({
           query: GET_BOXES
         })
-        .then(data => {
-          console.log("TCL: mounted -> data from apollo", data);
+        .then(({ data }) => {
+          tradeBox.allStocks = data.trade_box;
         });
     });
+
+    return { tradeBox };
   }
 };
 </script>
