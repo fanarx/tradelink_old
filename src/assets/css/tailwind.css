@@ -1,0 +1,14 @@
+@tailwind base;
+
+/* a {
+  @apply text-red-600 font-semibold;
+} */
+
+@tailwind components;
+
+/* .btn {
+  @apply text-green-600 font-bold;
+  background-color: yellow;
+} */
+
+@tailwind utilities;

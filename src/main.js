@@ -1,4 +1,5 @@
 import Vue from 'vue';
+import './assets/css/tailwind.css';
 import App from './App.vue';
 import VueCompositionApi from '@vue/composition-api';
 import ApolloClient from 'apollo-client';

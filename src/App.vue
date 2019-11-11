@@ -1,6 +1,9 @@
 <template>
   <main>
     <hello-world></hello-world>
+    <div class="bg-red-500 p-3">
+      Tailwind Test
+    </div>
   </main>
 </template>
 
