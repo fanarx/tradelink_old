@@ -1,23 +1,22 @@
 <template>
-  <div class="hello">
-    <h1>Hello Trading</h1>
-    <ul>
-      <li
-        v-for="stock in tradeBox.allStocks"
-        :key="stock.id"
-      >
-        {{stock.title}}
-        <ul>
-          <li
-            v-for="item in stock.stocks"
-            :key="item.id"
-          >
-            {{item.name}}
-          </li>
-        </ul>
-      </li>
-    </ul>
-  </div>
+  <main class="w-full flex flex-col items-center p-6">
+    <div
+      class="max-w-sm rounded overflow-hidden shadow-lg border border-gray-400 mb-8 w-3/4"
+      v-for="stockGroup in tradeBox.allStocks"
+      :key="stockGroup.id"
+    >
+      <span class="text-gray-900 font-bold pl-3">{{stockGroup.title}}</span>
+      <div class="border-t border-gray-400 p-3 flex flex-wrap">
+        <span
+          class="p-2 mr-2 mb-2 border border-orange-400 cursor-pointer"
+          v-for="item in stockGroup.stocks"
+          :key="item.id"
+        >
+          {{item.name}}
+        </span>
+      </div>
+    </div>
+  </main>
 </template>
 
 <script>
@@ -26,7 +25,7 @@ import gql from "graphql-tag";
 import { useApollo } from "../composables/useApollo";
 
 export default {
-  name: "HelloWorld",
+  name: "StockPage",
   setup() {
     const apollo = useApollo();
 

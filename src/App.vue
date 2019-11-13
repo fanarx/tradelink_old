@@ -1,18 +1,13 @@
 <template>
-  <main>
-    <hello-world></hello-world>
-    <div class="bg-red-500 p-3">
-      Tailwind Test
-    </div>
-  </main>
+  <stock-page></stock-page>
 </template>
 
 <script>
 import { provideApollo } from "./composables/useApollo";
-import HelloWorld from "./components/HelloWorld";
+import StockPage from "./components/StockPage";
 export default {
   components: {
-    HelloWorld
+    StockPage
   },
   setup(
     _,
