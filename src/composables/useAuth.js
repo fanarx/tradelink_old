@@ -1,4 +1,6 @@
 import { toRefs, reactive } from '@vue/composition-api';
+import { useApollo } from './useApollo';
+import gql from 'graphql-tag';
 import firebase from '@firebase/app';
 import '@firebase/auth';
 import '@firebase/database';
@@ -18,6 +20,18 @@ if (firebase.apps.length === 0) {
   firebase.initializeApp(firebaseConfig);
 }
 
+const INSERT_USER = gql`
+  mutation insert_user($id: String!, $name: String!) {
+    insert_user(objects: { id: $id, name: $name }) {
+      affected_rows
+      returning {
+        id
+        name
+      }
+    }
+  }
+`;
+
 export default function() {
   // our reactive properties...
   let state = reactive({
@@ -29,14 +43,17 @@ export default function() {
   // make the firebase call to listen for change in auth state,
   // we have set initial loading status to true so nothing happens on UI
   // side until loading is set to false
-  let callback = null;
-  let metadataRef = null;
+  //let callback = null;
+  //let metadataRef = null;
+  const apollo = useApollo();
 
   firebase.auth().onAuthStateChanged(async user => {
+    console.log('user from useAuth', user);
     // Remove previous listener.
-    if (callback) {
-      metadataRef.off('value', callback);
-    }
+    // if (callback) {
+    //   console.log('TCL: remove callback', callback);
+    //   metadataRef.off('value', callback);
+    // }
     if (user) {
       const token = await user.getIdToken();
       const idTokenResult = await user.getIdTokenResult();
@@ -47,14 +64,30 @@ export default function() {
         localStorage.setItem('token', token);
       } else {
         // Check if refresh is required.
+
         const metadataRef = firebase.database().ref('metadata/' + user.uid + '/refreshTime');
-        callback = async () => {
+
+        const callback = async () => {
+          console.log('TCL: metadataRef callback', metadataRef);
           // Force refresh to pick up the latest custom claims changes.
           const token = await user.getIdToken(true);
           state.user = user;
           localStorage.setItem('token', token);
+          const variables = {
+            id: user.uid,
+            name: user.email.split('@')[0]
+          };
+
+          apollo
+            .mutate({
+              mutation: INSERT_USER,
+              variables
+            })
+            .catch(error => {
+              console.error('mutation error:', error);
+            });
         };
-        metadataRef.on('value', callback);
+        metadataRef.once('value', callback);
       }
     } else {
       state.user = null;

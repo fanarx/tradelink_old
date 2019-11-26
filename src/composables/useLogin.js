@@ -47,6 +47,20 @@ export default function() {
       });
   };
 
+  const signupWithEmail = () => {
+    firebase
+      .auth()
+      .createUserWithEmailAndPassword(state.username, state.password)
+      .then(
+        () => {},
+        error => (state.error = error)
+      )
+      .catch(error => {
+        // Handle Errors here.
+        state.error = error;
+      });
+  };
+
   const logout = () => {
     firebase
       .auth()
@@ -73,6 +87,7 @@ export default function() {
     // pass back a login and logout function to be utilized
     // by the login form
     loginWithEmail,
+    signupWithEmail,
     loginWithGoogle,
     logout
   };
