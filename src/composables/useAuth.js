@@ -20,12 +20,12 @@ if (firebase.apps.length === 0) {
   firebase.initializeApp(firebaseConfig);
 }
 
-const INSERT_USER = gql`
-  mutation insert_user($id: String!, $name: String!) {
-    insert_user(objects: { id: $id, name: $name }) {
-      affected_rows
+const UPDATE_USER = gql`
+  mutation update_user($id: String!, $name: String!, $is_confirmed: Boolean) {
+    update_user(where: { name: { _eq: $name } }, _set: { id: $id, is_confirmed: $is_confirmed }) {
       returning {
         id
+        is_confirmed
         name
       }
     }
@@ -75,12 +75,13 @@ export default function() {
           localStorage.setItem('token', token);
           const variables = {
             id: user.uid,
-            name: user.email.split('@')[0]
+            name: user.email.split('@')[0],
+            is_confirmed: true
           };
 
           apollo
             .mutate({
-              mutation: INSERT_USER,
+              mutation: UPDATE_USER,
               variables
             })
             .catch(error => {

@@ -1,5 +1,5 @@
 <template>
-  <div class="flex justify-between bg-indigo-900 h-10 px-8">
+  <div style="background-color: #434651" class="flex justify-between h-10 px-8">
     <span class="flex items-center text-white h-10 font-semibold whitespace-no-wrap">
       Tradelink
     </span>

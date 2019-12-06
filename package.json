@@ -8,6 +8,7 @@
     "lint": "vue-cli-service lint"
   },
   "dependencies": {
+    "@vue/apollo-composable": "^4.0.0-alpha.3",
     "@vue/composition-api": "^0.3.2",
     "apollo-cache-inmemory": "^1.6.3",
     "apollo-client": "^2.6.4",
