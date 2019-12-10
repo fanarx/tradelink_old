@@ -1,7 +1,11 @@
 <template>
   <div>
-    <div v-click-outside="closeDropDown" class="flex flex-col overflow-hidden w-48 z-10">
-      <div @click.stop="userState.isDropdownOpen = !userState.isDropdownOpen" class="flex h-10 items-center">
+    <div
+      @click="e => e.stopPropagation()"
+      v-click-outside="closeDropDown"
+      class="flex flex-col overflow-hidden w-48 z-10"
+    >
+      <div @click="userState.isDropdownOpen = !userState.isDropdownOpen" class="flex h-10 items-center">
         <span class="w-4/5 cursor-pointer pr-3 text-white text-right pl-2">
           {{ userState.selectedUser ? userState.selectedUser.name : 'Log in' }}
         </span>
@@ -30,7 +34,6 @@
         class=" flex flex-col bg-white border border-gray-400 z-10 p-4"
         v-if="!userState.isDropdownOpen && userState.selectedUser"
       >
-        <!-- <input class="border py-2 px-3 text-grey-darkest" type="text" placeholder="username" v-model="username" /> -->
         <input
           class="border py-2 px-1 text-grey-darkest mb-1"
           type="password"
@@ -44,24 +47,26 @@
           placeholder="Confirm password"
           v-model="userState.confirmPassword.text"
         />
-        <p v-if="!doesPasswordsMatch" class="text-red-500">{{ userState.confirmPassword.error }}</p>
+        <p v-if="!doPasswordsMatch" class="text-red-500">{{ userState.confirmPassword.error }}</p>
         <button
           v-if="!userState.selectedUser.is_confirmed"
           class="block bg-teal-500 hover:bg-teal-700 text-white uppercase py-2
         px-8 m-3 mx-auto rounded"
           @click="signUp"
-          :disabled="!doesPasswordsMatch || !isValid"
+          :disabled="!doPasswordsMatch || !isValid || userState.isLoading"
         >
-          Sign up
+          <icon-base v-if="userState.isLoading" class="w-6 h-6" icon-name="loading..."><icon-spinner /></icon-base>
+          <span v-else>Sign up</span>
         </button>
         <button
           v-else
           class="block bg-teal-500 hover:bg-teal-700 text-white uppercase py-2
         px-8 m-3 mx-auto rounded"
           @click="logIn"
-          :disabled="!isValid"
+          :disabled="!isValid || userState.isLoading"
         >
-          Login
+          <icon-base v-if="userState.isLoading" class="w-6 h-6" icon-name="loading..."><icon-spinner /></icon-base>
+          <span v-else>Login</span>
         </button>
         <p class="text-red-500">{{ error }}</p>
       </div>
@@ -70,23 +75,27 @@
 </template>
 
 <script>
-import { reactive, onMounted, computed } from '@vue/composition-api';
-import gql from 'graphql-tag';
+import { reactive, computed } from '@vue/composition-api';
 import useLogin from '../composables/useLogin';
-import { useApollo } from '../composables/useApollo';
+import { useQuery, useResult } from '@vue/apollo-composable';
+import { GET_USERS } from '../queries';
 import IconBase from '../components/IconBase';
 import IconConfirmed from '../components/icons/IconConfirmed';
+import IconSpinner from '../components/icons/IconSpinner';
+
 export default {
   components: {
     IconBase,
-    IconConfirmed
+    IconConfirmed,
+    IconSpinner
   },
   setup() {
-    const apollo = useApollo();
-
+    const { result } = useQuery(GET_USERS);
+    const users = useResult(result, []);
     const authState = useLogin();
     const userState = reactive({
-      users: [],
+      users,
+      isLoading: false,
       isDropdownOpen: false,
       selectedUser: null,
       confirmPassword: {
@@ -95,34 +104,49 @@ export default {
       }
     });
 
-    function closeDropDown() {
-      userState.isDropdownOpen = false;
-      userState.selectedUser = null;
+    function resetUserState() {
       userState.confirmPassword = {
         text: null,
         error: null
       };
-      authState.username.value = null;
+      userState.isDropdownOpen = false;
       authState.password.value = null;
+    }
+
+    function closeDropDown() {
+      userState.selectedUser = null;
+      resetUserState();
     }
 
     function handleUserSelect(user) {
       userState.selectedUser = user;
-      userState.isDropdownOpen = false;
       authState.username.value = user.name;
+      resetUserState();
     }
 
-    function signUp() {
-      authState.username.value = authState.username.value + '@mail.com';
-      authState.signupWithEmail();
+    async function signUp() {
+      userState.isLoading = true;
+      try {
+        await authState.signupWithEmail();
+        userState.isLoading = false;
+        closeDropDown();
+      } catch (e) {
+        userState.isLoading = false;
+      }
     }
 
-    function logIn() {
-      authState.username.value = authState.username.value + '@mail.com';
-      authState.loginWithEmail();
+    async function logIn() {
+      userState.isLoading = true;
+      try {
+        await authState.loginWithEmail();
+        userState.isLoading = false;
+        closeDropDown();
+      } catch (e) {
+        userState.isLoading = false;
+      }
     }
 
-    const doesPasswordsMatch = computed(() => {
+    const doPasswordsMatch = computed(() => {
       const isMatch = userState.confirmPassword.text === authState.password.value;
       if (!isMatch && userState.confirmPassword.text !== null) {
         userState.confirmPassword.error = 'Passwords do not match';
@@ -132,30 +156,10 @@ export default {
       }
       return isMatch;
     });
-
-    onMounted(() => {
-      const GET_USERS = gql`
-        query getUsers {
-          user {
-            name
-            is_confirmed
-          }
-        }
-      `;
-      apollo
-        .query({
-          query: GET_USERS
-        })
-        .then(({ data }) => {
-          userState.users = data.user;
-        })
-        .catch(err => console.log('apollo error', err));
-    });
-
     return {
       closeDropDown,
       handleUserSelect,
-      doesPasswordsMatch,
+      doPasswordsMatch,
       userState,
       signUp,
       logIn,

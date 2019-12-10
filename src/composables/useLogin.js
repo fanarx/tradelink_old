@@ -19,9 +19,9 @@ export default function() {
   });
 
   const loginWithEmail = () => {
-    firebase
+    return firebase
       .auth()
-      .signInWithEmailAndPassword(state.username, state.password)
+      .signInWithEmailAndPassword(state.username + '@mail.com', state.password + '12345')
       .then(
         () => {},
         error => (state.error = error)
@@ -48,9 +48,9 @@ export default function() {
   };
 
   const signupWithEmail = () => {
-    firebase
+    return firebase
       .auth()
-      .createUserWithEmailAndPassword(state.username, state.password)
+      .createUserWithEmailAndPassword(state.username + '@mail.com', state.password + '12345')
       .then(
         () => {},
         error => (state.error = error)

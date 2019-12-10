@@ -1,9 +1,6 @@
-import Vue from 'vue';
 import ApolloClient from 'apollo-client';
 import { WebSocketLink } from 'apollo-link-ws';
 import { InMemoryCache } from 'apollo-cache-inmemory';
-import VueApollo from 'vue-apollo';
-
 const getHeaders = () => {
   const headers = {
     'x-hasura-admin-secret': process.env.VUE_APP_X_HASURA_ADMIN_SECRET
@@ -35,10 +32,4 @@ const client = new ApolloClient({
   })
 });
 
-const apolloProvider = new VueApollo({
-  defaultClient: client
-});
-
-Vue.use(VueApollo);
-
-export default apolloProvider;
+export default client;

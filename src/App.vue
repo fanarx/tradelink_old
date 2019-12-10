@@ -1,13 +1,11 @@
 <template>
   <main>
     <navbar :user="user"></navbar>
-
     <stock-page></stock-page>
   </main>
 </template>
 
 <script>
-import { provideApollo } from './composables/useApollo';
 import StockPage from './components/StockPage';
 import Navbar from './components/Navbar';
 import useAuth from './composables/useAuth';
@@ -17,9 +15,7 @@ export default {
     StockPage,
     Navbar
   },
-  setup(_, { root: { $apollo } }) {
-    provideApollo($apollo);
-
+  setup() {
     const { user, loading, error } = useAuth();
 
     return {

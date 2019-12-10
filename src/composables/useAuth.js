@@ -1,6 +1,7 @@
 import { toRefs, reactive } from '@vue/composition-api';
-import { useApollo } from './useApollo';
+import { useMutation } from '@vue/apollo-composable';
 import gql from 'graphql-tag';
+import { GET_USERS } from '../queries';
 import firebase from '@firebase/app';
 import '@firebase/auth';
 import '@firebase/database';
@@ -40,20 +41,31 @@ export default function() {
     error: null
   });
 
+  const { mutate: updateUser, onError } = useMutation(UPDATE_USER, {
+    update: (cache, { data: { update_user } }) => {
+      const cacheData = cache.readQuery({ query: GET_USERS });
+      const updateUser = update_user.returning[0];
+      const index = cacheData.user.findIndex(user => user.name == updateUser.name);
+      if (index > -1) {
+        cacheData.user[index].id = updateUser.id;
+        cacheData.user[index].is_confirmed = updateUser.is_confirmed;
+      }
+      cache.writeQuery({ query: GET_USERS, data: cacheData });
+    }
+  });
+
+  onError(error => {
+    console.error('mutation error', error);
+  });
+
   // make the firebase call to listen for change in auth state,
   // we have set initial loading status to true so nothing happens on UI
   // side until loading is set to false
   //let callback = null;
   //let metadataRef = null;
-  const apollo = useApollo();
 
   firebase.auth().onAuthStateChanged(async user => {
     console.log('user from useAuth', user);
-    // Remove previous listener.
-    // if (callback) {
-    //   console.log('TCL: remove callback', callback);
-    //   metadataRef.off('value', callback);
-    // }
     if (user) {
       const token = await user.getIdToken();
       const idTokenResult = await user.getIdTokenResult();
@@ -79,14 +91,7 @@ export default function() {
             is_confirmed: true
           };
 
-          apollo
-            .mutate({
-              mutation: UPDATE_USER,
-              variables
-            })
-            .catch(error => {
-              console.error('mutation error:', error);
-            });
+          updateUser(variables);
         };
         metadataRef.once('value', callback);
       }
