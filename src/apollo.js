@@ -3,7 +3,8 @@ import { WebSocketLink } from 'apollo-link-ws';
 import { InMemoryCache } from 'apollo-cache-inmemory';
 const getHeaders = () => {
   const headers = {
-    'x-hasura-admin-secret': process.env.VUE_APP_X_HASURA_ADMIN_SECRET
+    //'x-hasura-admin-secret': process.env.VUE_APP_X_HASURA_ADMIN_SECRET
+    //'x-hasura-role': 'anonymous'
   };
   const token = window.localStorage.getItem('token');
 
