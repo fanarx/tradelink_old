@@ -18,13 +18,13 @@
       </span>
     </div>
     <div class="border-t border-gray-400 p-3 flex flex-wrap">
-      <span class="p-2 mr-2 mb-2 border border-orange-400 cursor-pointer" v-for="item in items" :key="item.id">
-        {{ item.name }}
-        <span class="flex mr-2" @click="deleteStock(item.id)">
-          <icon-base class="w-6 h-6 cursor-pointer" icon-name="plus">
+      <span class="mr-2 mb-2 border border-orange-400 cursor-pointer relative" v-for="item in items" :key="item.id">
+        <span @click="deleteStock(item.id)">
+          <icon-base class="flex-end w-4 h-4 m-1 cursor-pointer absolute right-0 top-0" icon-name="plus">
             <icon-delete />
           </icon-base>
         </span>
+        <div class="pr-4 pt-4 pl-2 pb-2 mr-2">{{ item.name }}</div>
       </span>
     </div>
   </div>
