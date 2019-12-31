@@ -20,6 +20,11 @@
     <div class="border-t border-gray-400 p-3 flex flex-wrap">
       <span class="p-2 mr-2 mb-2 border border-orange-400 cursor-pointer" v-for="item in items" :key="item.id">
         {{ item.name }}
+        <span class="flex mr-2" @click="deleteStock(item.id)">
+          <icon-base class="w-6 h-6 cursor-pointer" icon-name="plus">
+            <icon-delete />
+          </icon-base>
+        </span>
       </span>
     </div>
   </div>
@@ -27,10 +32,12 @@
 
 <script>
 import { ref } from '@vue/composition-api';
-import IconBase from './IconBase';
-import IconPlus from './icons/IconPlus';
 import { useMutation } from '@vue/apollo-composable';
 import gql from 'graphql-tag';
+import { GET_BOXES } from '../queries';
+import IconBase from './IconBase';
+import IconPlus from './icons/IconPlus';
+import IconDelete from './icons/IconDelete';
 
 const INSERT_STOCKS = gql`
   mutation insert_stocks($name: String!, $trade_box_id: Int!) {
@@ -45,14 +52,36 @@ const INSERT_STOCKS = gql`
   }
 `;
 
+const MOVE_TO_DELETE_STOCKS = gql`
+  mutation deleteAndInsert($stock_id: Int!, $trade_box_id: Int!) {
+    delete_stocks(where: { id: { _eq: $stock_id } }) {
+      returning {
+        __typename
+        id
+        trade_box_id
+      }
+    }
+    delete_stocksDelete(where: { stock_id: { _is_null: false } }) {
+      affected_rows
+    }
+
+    insert_stocksDelete(objects: [{ stock_id: $stock_id, trade_box_id: $trade_box_id }]) {
+      affected_rows
+    }
+  }
+`;
+
 export default {
   components: {
     IconBase,
-    IconPlus
+    IconPlus,
+    IconDelete
   },
   props: ['title', 'items', 'id'],
   setup({ id }) {
     const stockName = ref('');
+    const stockToDeleteId = ref('');
+
     const { mutate: insertStocks } = useMutation(INSERT_STOCKS, () => ({
       optimisticResponse: {
         insert_stocks: {
@@ -68,25 +97,13 @@ export default {
         }
       },
       update: (cache, mutationData) => {
-        const GET_BOXES = gql`
-          query getBoxes {
-            trade_box {
-              id
-              title
-              stocks {
-                id
-                name
-              }
-            }
-          }
-        `;
         const insert_stocks = mutationData.data.insert_stocks;
 
         const data = cache.readQuery({ query: GET_BOXES });
         const tradeBoxId = insert_stocks.returning[0].trade_box_id;
-        const titleIndex = data.trade_box.findIndex(box => box.id === tradeBoxId);
+        const tradeBoxIndex = data.trade_box.findIndex(box => box.id === tradeBoxId);
 
-        data.trade_box[titleIndex].stocks.push({
+        data.trade_box[tradeBoxIndex].stocks.push({
           id: insert_stocks.returning[0].id,
           name: insert_stocks.returning[0].name,
           __typename: 'stocks'
@@ -98,6 +115,48 @@ export default {
         });
       }
     }));
+
+    const { mutate: deleteAndInsert } = useMutation(MOVE_TO_DELETE_STOCKS, () => ({
+      optimisticResponse: {
+        delete_stocks: {
+          returning: [
+            {
+              __typename: 'stocks',
+              id: stockToDeleteId.value,
+              trade_box_id: id
+            }
+          ],
+          __typename: 'stocks_mutation_response'
+        },
+        delete_stocksDelete: {
+          __typename: 'stocksDelete_mutation_response',
+          affected_rows: 1
+        },
+        insert_stocksDelete: {
+          __typename: 'stocksDelete_mutation_response',
+          affected_rows: 1
+        }
+      },
+      update: (cache, mutationData) => {
+        const deletedStockId = mutationData.data.delete_stocks.returning[0].id;
+        const deletedStockTradeBoxId = mutationData.data.delete_stocks.returning[0].trade_box_id;
+
+        const data = cache.readQuery({
+          query: GET_BOXES
+        });
+        const tradeBoxIndex = data.trade_box.findIndex(box => box.id === deletedStockTradeBoxId);
+
+        data.trade_box[tradeBoxIndex].stocks = data.trade_box[tradeBoxIndex].stocks.filter(
+          stock => stock.id !== deletedStockId
+        );
+
+        cache.writeQuery({
+          query: GET_BOXES,
+          data
+        });
+      }
+    }));
+
     function addStock() {
       insertStocks({
         name: stockName.value,
@@ -106,9 +165,18 @@ export default {
       stockName.value = '';
     }
 
+    function deleteStock(stock_id) {
+      stockToDeleteId.value = stock_id;
+      deleteAndInsert({
+        stock_id,
+        trade_box_id: id
+      });
+    }
+
     return {
       stockName,
-      addStock
+      addStock,
+      deleteStock
     };
   }
 };

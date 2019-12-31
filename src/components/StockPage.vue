@@ -10,19 +10,8 @@
 import gql from 'graphql-tag';
 import StockBlock from './StockBlock';
 import { useQuery, useResult } from '@vue/apollo-composable';
+import { GET_BOXES } from '../queries';
 
-const GET_BOXES = gql`
-  query getBoxes {
-    trade_box {
-      id
-      title
-      stocks {
-        id
-        name
-      }
-    }
-  }
-`;
 const SUBSCRIBE_STOCKS = gql`
   subscription {
     stocks(order_by: { created_at: desc }, limit: 1) {
@@ -32,6 +21,15 @@ const SUBSCRIBE_STOCKS = gql`
         id
         title
       }
+    }
+  }
+`;
+
+const SUBSCRIBE_DELETED_STOCKS = gql`
+  subscription {
+    stocksDelete {
+      stock_id
+      trade_box_id
     }
   }
 `;
@@ -49,17 +47,17 @@ export default {
       document: SUBSCRIBE_STOCKS,
       updateQuery: (previousResult, { subscriptionData }) => {
         if (subscriptionData.data.stocks.length > 0) {
-          const titleIndex = previousResult.trade_box.findIndex(
+          const tradeBoxIndex = previousResult.trade_box.findIndex(
             box => box.id === subscriptionData.data.stocks[0].trade_box.id
           );
 
           const isStockInBox =
-            previousResult.trade_box[titleIndex].stocks.findIndex(
+            previousResult.trade_box[tradeBoxIndex].stocks.findIndex(
               stock => stock.id === subscriptionData.data.stocks[0].id
             ) >= 0;
 
           if (!isStockInBox) {
-            previousResult.trade_box[titleIndex].stocks.push({
+            previousResult.trade_box[tradeBoxIndex].stocks.push({
               id: subscriptionData.data.stocks[0].id,
               name: subscriptionData.data.stocks[0].name,
               __typename: 'stocks'
@@ -67,6 +65,23 @@ export default {
           }
           return previousResult;
         }
+      }
+    }));
+
+    subscribeToMore(() => ({
+      document: SUBSCRIBE_DELETED_STOCKS,
+      updateQuery: (previousResult, { subscriptionData }) => {
+        if (subscriptionData.data.stocksDelete && subscriptionData.data.stocksDelete.length > 0) {
+          const stockId = subscriptionData.data.stocksDelete[0].stock_id;
+          const tradeBoxId = subscriptionData.data.stocksDelete[0].trade_box_id;
+
+          const tradeBoxIndex = previousResult.trade_box.findIndex(box => box.id === tradeBoxId);
+
+          previousResult.trade_box[tradeBoxIndex].stocks = previousResult.trade_box[tradeBoxIndex].stocks.filter(
+            stock => stock.id !== stockId
+          );
+        }
+        return previousResult;
       }
     }));
 

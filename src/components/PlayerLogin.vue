@@ -14,7 +14,7 @@
       <div v-if="userState.isDropdownOpen">
         <ul
           class="flex flex-col items-start absolute bg-white border
-      border-gray-400 w-48 border-t-0 h-30 overflow-auto overflow-x-hidden"
+      border-gray-400 w-48 border-t-0 h-30 overflow-auto overflow-x-hidden z-10"
         >
           <li
             v-for="user in userState.users"
