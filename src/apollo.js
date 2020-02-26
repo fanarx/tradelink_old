@@ -1,33 +1,43 @@
 import ApolloClient from 'apollo-client';
 import { WebSocketLink } from 'apollo-link-ws';
 import { InMemoryCache } from 'apollo-cache-inmemory';
-const getHeaders = () => {
-  const headers = {
-    //'x-hasura-admin-secret': process.env.VUE_APP_X_HASURA_ADMIN_SECRET
-    //'x-hasura-role': 'anonymous'
-  };
-  const token = window.localStorage.getItem('token');
+import { HttpLink } from 'apollo-link-http';
+import { getMainDefinition } from 'apollo-utilities';
+import { split } from 'apollo-link';
+import { setContext } from 'apollo-link-context';
 
-  if (token) {
-    headers.authorization = `Bearer ${token}`;
-  }
+const httpLink = new HttpLink({
+  uri: process.env.VUE_APP_GRAPH_QL_URI
+});
 
-  return headers;
-};
-
-const link = new WebSocketLink({
-  uri: process.env.VUE_APP_GRAPH_QL_URI,
+const wsLink = new WebSocketLink({
+  uri: process.env.VUE_APP_GRAPH_QL_URI_WS,
   options: {
-    reconnect: true,
-    timeout: 30000,
-    connectionParams: () => {
-      return { headers: getHeaders() };
-    }
+    reconnect: true
   }
 });
 
+const link = split(
+  ({ query }) => {
+    const definition = getMainDefinition(query);
+    return definition.kind === 'OperationDefinition' && definition.operation === 'subscription';
+  },
+  wsLink,
+  httpLink
+);
+
+const authLink = setContext((_, { headers = {} }) => {
+  const token = localStorage.getItem('token');
+  return {
+    headers: {
+      ...headers,
+      ...(token ? { authorization: `Bearer ${token}` } : {})
+    }
+  };
+});
+
 const client = new ApolloClient({
-  link,
+  link: authLink.concat(link),
   cache: new InMemoryCache({
     addTypename: true
   })
