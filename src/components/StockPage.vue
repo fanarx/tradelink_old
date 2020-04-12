@@ -1,5 +1,5 @@
 <template>
-  <main class="w-full flex flex-col items-center p-6">
+  <main class="w-full flex items-center justify-around pl-0 pt-16 flex-wrap">
     <div class="max-w-sm w-3/4" v-for="stockGroup in tradeBox" :key="stockGroup.id">
       <stock-block :id="stockGroup.id" :title="stockGroup.title" :items="stockGroup.stocks" />
     </div>

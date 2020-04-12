@@ -1,7 +1,9 @@
 <template>
   <div class="rounded overflow-hidden shadow-lg border border-gray-400 mb-8 flex flex-col">
     <div class="flex justify-between">
-      <span class="text-gray-900 font-bold p-3">{{ title }}</span>
+      <span :class="{ 'text-gray-900 font-bold p-3': true, 'text-red-600': title.toLowerCase() === 'on focus' }">{{
+        title
+      }}</span>
       <span class="flex items-center py-2">
         <input
           @keyup.enter="addStock"
