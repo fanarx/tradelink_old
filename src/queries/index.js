@@ -12,7 +12,7 @@ export const GET_USERS = gql`
 
 export const GET_BOXES = gql`
   query getBoxes {
-    trade_box {
+    trade_box(order_by: { priority: desc }) {
       id
       title
       stocks(order_by: { created_at: asc }) {
