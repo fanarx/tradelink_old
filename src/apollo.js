@@ -9,14 +9,14 @@ import { setContext } from 'apollo-link-context';
 import firebase from '@firebase/app';
 
 const httpLink = new HttpLink({
-  uri: process.env.VUE_APP_GRAPH_QL_URI
+  uri: process.env.VUE_APP_GRAPH_QL_URI,
 });
 
 const wsLink = new WebSocketLink({
   uri: process.env.VUE_APP_GRAPH_QL_URI_WS,
   options: {
-    reconnect: true
-  }
+    reconnect: true,
+  },
 });
 
 const link = split(
@@ -33,35 +33,43 @@ const authLink = setContext((_, { headers = {} }) => {
   return {
     headers: {
       ...headers,
-      ...(token ? { authorization: `Bearer ${token}` } : {})
-    }
+      ...(token ? { authorization: `Bearer ${token}` } : {}),
+    },
   };
 });
 
-const promiseToObservable = promise =>
-  new Observable(subscriber => {
+const promiseToObservable = (promise) =>
+  new Observable((subscriber) => {
     promise.then(
-      value => {
+      (value) => {
         if (subscriber.closed) return;
         subscriber.next(value);
         subscriber.complete();
       },
-      err => subscriber.error(err)
+      (err) => subscriber.error(err)
     );
     return subscriber; // this line can removed, as per next comment
   });
 
 const errorLink = onError(({ graphQLErrors, forward, operation }) => {
+  console.log('***: errorLink -> graphQLErrors', graphQLErrors);
   if (graphQLErrors[0].extensions.code === 'invalid-jwt') {
     //const token = await firebase.auth().currentUser.getIdToken(true);
     //localStorage.setItem('token', token);
     //console.log('errorLink -> token', token);
-    //return forward(operation);
+
+    if (!firebase.auth().currentUser) {
+      firebase.auth().onAuthStateChanged(async (user) => {
+        const token = await user.getIdToken(true);
+        localStorage.setItem('token', token);
+        location.reload();
+      });
+    }
     return promiseToObservable(
       firebase
         .auth()
         .currentUser.getIdToken(true)
-        .then(token => localStorage.setItem('token', token))
+        .then((token) => localStorage.setItem('token', token))
     ).flatMap(() => forward(operation));
   }
 });
@@ -69,8 +77,8 @@ const errorLink = onError(({ graphQLErrors, forward, operation }) => {
 const client = new ApolloClient({
   link: errorLink.concat(authLink.concat(link)),
   cache: new InMemoryCache({
-    addTypename: true
-  })
+    addTypename: true,
+  }),
 });
 
 export default client;
