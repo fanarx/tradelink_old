@@ -1,5 +1,5 @@
 <template>
-  <main class="w-full flex justify-around pt-16 flex-wrap">
+  <main class="w-full flex justify-between p-10 pt-16 flex-wrap">
     <div class="max-w-sm w-3/4" v-for="stockGroup in tradeBox" :key="stockGroup.id">
       <stock-block :id="stockGroup.id" :title="stockGroup.title" :items="stockGroup.stocks" />
     </div>
@@ -36,7 +36,7 @@ const SUBSCRIBE_DELETED_STOCKS = gql`
 
 export default {
   components: {
-    StockBlock
+    StockBlock,
   },
   setup() {
     const { result, subscribeToMore } = useQuery(GET_BOXES);
@@ -48,24 +48,24 @@ export default {
       updateQuery: (previousResult, { subscriptionData }) => {
         if (subscriptionData.data.stocks.length > 0) {
           const tradeBoxIndex = previousResult.trade_box.findIndex(
-            box => box.id === subscriptionData.data.stocks[0].trade_box.id
+            (box) => box.id === subscriptionData.data.stocks[0].trade_box.id
           );
 
           const isStockInBox =
             previousResult.trade_box[tradeBoxIndex].stocks.findIndex(
-              stock => stock.id === subscriptionData.data.stocks[0].id
+              (stock) => stock.id === subscriptionData.data.stocks[0].id
             ) >= 0;
 
           if (!isStockInBox) {
             previousResult.trade_box[tradeBoxIndex].stocks.push({
               id: subscriptionData.data.stocks[0].id,
               name: subscriptionData.data.stocks[0].name,
-              __typename: 'stocks'
+              __typename: 'stocks',
             });
           }
           return previousResult;
         }
-      }
+      },
     }));
 
     subscribeToMore(() => ({
@@ -75,20 +75,20 @@ export default {
           const stockId = subscriptionData.data.stocksDelete[0].stock_id;
           const tradeBoxId = subscriptionData.data.stocksDelete[0].trade_box_id;
 
-          const tradeBoxIndex = previousResult.trade_box.findIndex(box => box.id === tradeBoxId);
+          const tradeBoxIndex = previousResult.trade_box.findIndex((box) => box.id === tradeBoxId);
 
           previousResult.trade_box[tradeBoxIndex].stocks = previousResult.trade_box[tradeBoxIndex].stocks.filter(
-            stock => stock.id !== stockId
+            (stock) => stock.id !== stockId
           );
         }
         return previousResult;
-      }
+      },
     }));
 
     return {
-      tradeBox
+      tradeBox,
     };
-  }
+  },
 };
 </script>
 
